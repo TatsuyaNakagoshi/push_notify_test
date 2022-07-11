@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+final _firebaseMessaging = FirebaseMessaging.instance;
+final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
 const AndroidNotificationChannel channel = AndroidNotificationChannel(
@@ -24,12 +25,12 @@ void main() async {
   await Firebase.initializeApp();
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   // for android foreground notification
-  await flutterLocalNotificationsPlugin
+  await _flutterLocalNotificationsPlugin
       .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>()
       ?.createNotificationChannel(channel);
   // for ios foreground notification
-  await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+  await _firebaseMessaging.setForegroundNotificationPresentationOptions(
     alert: true,
     badge: true,
     sound: true,
@@ -81,7 +82,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final _firebaseMessaging = FirebaseMessaging.instance;
   String? _token;
   Stream<String>? _tokenStream;
 
@@ -120,7 +120,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     // FCMトークン取得
     _firebaseMessaging.getToken().then(setToken);
-    _tokenStream = FirebaseMessaging.instance.onTokenRefresh;
+    _tokenStream = _firebaseMessaging.onTokenRefresh;
     _tokenStream?.listen(setToken);
 
     // フォアグラウンド表示
@@ -130,7 +130,7 @@ class _MyHomePageState extends State<MyHomePage> {
       AndroidNotification? android = message.notification?.android;
 
       if (notification != null && android != null) {
-        flutterLocalNotificationsPlugin.show(
+        _flutterLocalNotificationsPlugin.show(
             notification.hashCode,
             notification.title,
             notification.body,
