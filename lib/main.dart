@@ -54,19 +54,52 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final _firebaseMessaging = FirebaseMessaging.instance;
   String? _token;
+  Stream<String>? _tokenStream;
 
   @override
   void initState() {
     super.initState();
 
-    _firebaseMessaging.getToken().then(
-      (String? token) {
-        print("$token");
-        setState(() {
-          _token = token;
-        });
-      },
-    );
+    Future(() async {
+      ///プッシュ通知の許可
+      NotificationSettings settings =
+          await _firebaseMessaging.requestPermission(
+        ///画面にプッシュ通知を表示する↓
+        alert: true,
+        announcement: false,
+
+        ///アプリアイコンにバッジをつける
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+
+        ///音を鳴らす
+        sound: true,
+      );
+
+      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+        print('User granted permission');
+      } else if (settings.authorizationStatus ==
+          AuthorizationStatus.provisional) {
+        print('User granted provisional permission');
+      } else {
+        print('User declined or has not accepted permission');
+      }
+      print('User granted permission: ${settings.authorizationStatus}');
+    });
+
+    // FCMトークン取得
+    _firebaseMessaging.getToken().then(setToken);
+    _tokenStream = FirebaseMessaging.instance.onTokenRefresh;
+    _tokenStream?.listen(setToken);
+  }
+
+  void setToken(String? token) {
+    print('FCM Token: $token');
+    setState(() {
+      _token = token;
+    });
   }
 
   @override
