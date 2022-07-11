@@ -1,6 +1,18 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+
+const AndroidNotificationChannel channel = AndroidNotificationChannel(
+  'high_importance_channel', // id
+  'High Importance Notifications', // title
+  description:
+      'This channel is used for important notifications.', // description
+  importance: Importance.high,
+);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -93,6 +105,28 @@ class _MyHomePageState extends State<MyHomePage> {
     _firebaseMessaging.getToken().then(setToken);
     _tokenStream = FirebaseMessaging.instance.onTokenRefresh;
     _tokenStream?.listen(setToken);
+
+    // フォアグラウンド表示
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      print("フォアグラウンドでメッセージを受け取りました");
+      RemoteNotification? notification = message.notification;
+      AndroidNotification? android = message.notification?.android;
+
+      if (notification != null && android != null) {
+        flutterLocalNotificationsPlugin.show(
+            notification.hashCode,
+            notification.title,
+            notification.body,
+            NotificationDetails(
+              android: AndroidNotificationDetails(
+                channel.id,
+                channel.name,
+                channelDescription: channel.description,
+                icon: 'launch_background',
+              ),
+            ));
+      }
+    });
   }
 
   void setToken(String? token) {
